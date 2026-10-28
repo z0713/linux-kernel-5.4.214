@@ -12,12 +12,11 @@ MODULE_DESCRIPTION("Assignment 6 - Fetch and Add Module");
 #define NUM_THREADS 4
 
 static struct task_struct *threads[NUM_THREADS];
-static atomic_t counter = ATOMIC_INIT(0); // 원자적 카운터 선언 및 0으로 초기화
+static atomic_t counter = ATOMIC_INIT(0); 
 
 static int fetch_and_add_function(void *data)
 {
     while (!kthread_should_stop()) {
-        // 원자적으로 1 증가시키고 그 결과값을 반환받음 (Fetch-and-Add)
         int val = atomic_inc_return(&counter);
 
         printk(KERN_INFO "pid [%d] fetch_and_add_function: counter: %d\n", current->pid, val);
