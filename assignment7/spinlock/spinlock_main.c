@@ -16,7 +16,6 @@ MODULE_DESCRIPTION("Assignment 7 - Spinlock Linked List Module");
 #define NUM_THREADS 4
 #define TOTAL_NODES 1000000
 
-/* 슬라이드 25 구조체 */
 struct animal {
     int total;
     struct list_head entry;
@@ -32,12 +31,10 @@ static struct animal *head;
 static struct task_struct *threads[NUM_THREADS];
 static int thread_ids[NUM_THREADS];
 
-/* 시간 및 카운트 누적 변수 */
 static unsigned long long add_to_list_time = 0, add_to_list_count = 0;
 static unsigned long long search_time = 0, search_count = 0;
 static unsigned long long delete_time = 0, delete_count = 0;
 
-/* 스레드별 범위 설정 */
 static void set_iter_range(int thread_id, int range_bound[])
 {
     int per_thread = TOTAL_NODES / NUM_THREADS;
@@ -45,13 +42,11 @@ static void set_iter_range(int thread_id, int range_bound[])
     range_bound[1] = thread_id * per_thread - 1;
 }
 
-/* 탐색 타깃 ID 계산 */
 static int select_target_index(int range_bound[])
 {
     return range_bound[0] + (range_bound[1] - range_bound[0]) / 2;
 }
 
-/* Spinlock 기반 삽입 */
 static void add_to_list(int thread_id, int range_bound[])
 {
     struct timespec64 localclock;
@@ -82,7 +77,6 @@ static void add_to_list(int thread_id, int range_bound[])
            thread_id, first->var, new_cat->var, head->total);
 }
 
-/* Spinlock 기반 탐색 */
 static int search_list(int thread_id, int range_bound[])
 {
     struct cat *cur;
@@ -105,7 +99,6 @@ static int search_list(int thread_id, int range_bound[])
     return -ENODATA;
 }
 
-/* Spinlock 기반 삭제 (target_idx ~ range_bound[1] 범위 삭제) */
 static void delete_from_list(int thread_id, int range_bound[])
 {
     struct cat *cur, *tmp;
@@ -129,7 +122,6 @@ static void delete_from_list(int thread_id, int range_bound[])
            thread_id, target_idx, range_bound[1], head->total);
 }
 
-/* 워커 스레드 함수 */
 static int work_fn(void *data)
 {
     int range_bound[2];
@@ -150,7 +142,6 @@ static int work_fn(void *data)
     return 0;
 }
 
-/* 리스트 해제 */
 static void destroy_list(void)
 {
     struct cat *cur, *tmp;
@@ -163,7 +154,6 @@ static void destroy_list(void)
     spin_unlock(&head->lock);
 }
 
-/* 모듈 초기화 */
 static int __init spinlock_module_init(void)
 {
     int i;
@@ -189,7 +179,6 @@ static int __init spinlock_module_init(void)
     return 0;
 }
 
-/* 모듈 종료 */
 static void __exit spinlock_module_cleanup(void)
 {
     int i;
