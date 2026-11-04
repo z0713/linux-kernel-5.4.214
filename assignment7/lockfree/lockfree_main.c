@@ -16,38 +16,34 @@ MODULE_DESCRIPTION("Assignment 7 - Lock-free Linked List Module");
 #define NUM_THREADS 4
 #define TOTAL_NODES 1000000
 
-/* 슬라이드 25 자료구조 정의 */
 struct animal {
-    int total;                 /* 리스트 내 전체 노드 수 */
-    struct list_head entry;    /* 리스트의 헤드 */
-    atomic_t removed;          /* 삭제 여부 플래그 */
-    struct list_head gc_entry; /* 가비지 컬렉션 리스트의 헤드 */
+    int total;
+    struct list_head entry;
+    atomic_t removed;
+    struct list_head gc_entry;
 };
 
 struct cat {
-    int var;                   /* 고양이 ID */
-    struct list_head entry;    /* 연결 리스트 엔트리 */
-    atomic_t removed;          /* 논리적 삭제 플래그 */
-    struct list_head gc_entry; /* 가비지 컬렉션 엔트리 */
+    int var;
+    struct list_head entry;
+    atomic_t removed;
+    struct list_head gc_entry;
 };
 
 static struct animal *head;
 static struct task_struct *threads[NUM_THREADS];
 static int thread_ids[NUM_THREADS];
 
-/* 시간 및 카운트 누적 변수 */
 static unsigned long long add_to_list_time = 0, add_to_list_count = 0;
 static unsigned long long search_time = 0, search_count = 0;
 static unsigned long long delete_time = 0, delete_count = 0;
 
-/* 슬라이드 11, 19: Lock-free list_head 초기화 */
 static inline void INIT_LF_LIST_HEAD(struct list_head *list)
 {
     list->next = NULL;
     list->prev = list;
 }
 
-/* 슬라이드 13, 15: Lock-free 삽입 헬퍼 함수 */
 static inline void lf_list_add_tail(struct list_head *entry, struct list_head *head_entry)
 {
     entry->prev = __sync_lock_test_and_set(&head_entry->prev, entry);
@@ -57,13 +53,12 @@ static inline void lf_list_add_tail(struct list_head *entry, struct list_head *h
         entry->prev->next = entry;
 }
 
-/* 슬라이드 22: 가비지 리스트 삭제 헬퍼 함수 */
 static inline void _gc_list_del(struct list_head *prev, struct list_head *next, struct list_head *h)
 {
     if (next)
         next->prev = prev;
     else
-        h->prev = prev; /* tail 엔트리 갱신 */
+        h->prev = prev;
 
     if (prev)
         prev->next = next;
@@ -74,7 +69,6 @@ static inline void gc_list_del(struct list_head *entry, struct list_head *h)
     _gc_list_del(entry->prev, entry->next, h);
 }
 
-/* 스레드별 범위 설정 */
 static void set_iter_range(int thread_id, int range_bound[])
 {
     int per_thread = TOTAL_NODES / NUM_THREADS;
@@ -82,13 +76,11 @@ static void set_iter_range(int thread_id, int range_bound[])
     range_bound[1] = thread_id * per_thread - 1;
 }
 
-/* 탐색 타깃 ID 계산 (중간값) */
 static int select_target_index(int range_bound[])
 {
     return range_bound[0] + (range_bound[1] - range_bound[0]) / 2;
 }
 
-/* 슬라이드 29: Lock-free 삽입 */
 static void add_to_list(int thread_id, int range_bound[])
 {
     struct timespec64 localclock;
@@ -118,7 +110,6 @@ static void add_to_list(int thread_id, int range_bound[])
            thread_id, first->var, new_cat->var, head->total);
 }
 
-/* 슬라이드 30, 17: Lock-free 탐색 */
 static int search_list(int thread_id, int range_bound[])
 {
     struct list_head *entry, *iter = head->entry.next;
@@ -149,7 +140,6 @@ static int search_list(int thread_id, int range_bound[])
     return -ENODATA;
 }
 
-/* 슬라이드 34 요구 템플릿에 맞춘 논리적 삭제 */
 static void delete_from_list(int thread_id, int range_bound[])
 {
     struct list_head *entry, *iter = head->entry.next;
@@ -170,7 +160,6 @@ static void delete_from_list(int thread_id, int range_bound[])
         if (atomic_read(&cur->removed))
             continue;
 
-        /* 슬라이드 34 기준: target_idx부터 range_bound[1]까지 논리적 삭제 수행 */
         if (cur->var >= target_idx && cur->var <= range_bound[1]) {
             atomic_set(&cur->removed, 1);
             lf_list_add_tail(&cur->gc_entry, &head->gc_entry);
@@ -183,7 +172,6 @@ static void delete_from_list(int thread_id, int range_bound[])
            thread_id, target_idx, range_bound[1], head->total);
 }
 
-/* 슬라이드 28: 워커 스레드 함수 */
 static int work_fn(void *data)
 {
     int range_bound[2];
@@ -204,7 +192,6 @@ static int work_fn(void *data)
     return 0;
 }
 
-/* 슬라이드 32, 21: 가비지 리스트 비우기 (물리적 메모리 해제) */
 static int empty_garbage_list(void)
 {
     struct cat *cur;
@@ -225,7 +212,6 @@ static int empty_garbage_list(void)
     return 0;
 }
 
-/* 슬라이드 33: 남은 리스트 전체 삭제 */
 static void destroy_list(void)
 {
     struct cat *cur;
@@ -240,7 +226,6 @@ static void destroy_list(void)
     }
 }
 
-/* 슬라이드 27: 모듈 초기화 */
 static int __init lockfree_module_init(void)
 {
     int i;
@@ -267,12 +252,10 @@ static int __init lockfree_module_init(void)
     return 0;
 }
 
-/* 슬라이드 31, 34: 모듈 종료 */
 static void __exit lockfree_module_cleanup(void)
 {
     int i;
 
-    /* 슬라이드 34 형식에 맞춘 시간 측정 통계 출력 */
     printk(KERN_INFO "lockfree_module_cleanup: Lock-free linked list insert time: %llu ns, count: %llu\n",
            add_to_list_time, add_to_list_count);
     printk(KERN_INFO "lockfree_module_cleanup: Lock-free linked list search time: %llu ns, count: %llu\n",
